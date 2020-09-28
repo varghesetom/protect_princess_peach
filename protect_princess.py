@@ -5,7 +5,7 @@ Protect Princess Peach from the Koopas as she picks up flowers!
 '''
 
 import pygame, random, sys, math, copy, time
-from Characters import Nintendo, Mario, Peach 
+from Characters import Nintendo, Mario, Peach, KoopaArmy 
 
 from pygame.locals import *
 
@@ -15,16 +15,16 @@ def terminate():
     
 #Use the [:] to create a copy so as not to mess up the other processes of adding koopas 
 
-def did_koopa_reach_peach():
-    for k in koopas:
-        if peach.body.colliderect(k["rect"]):
-            return True 
-    return False  
-
-def mario_removes_koopa():
-    for k in koopas[:]:
-        if mario.hit_koopa(k):
-            koopas.remove(k)
+#def did_koopa_reach_peach():
+#    for k in koopas:
+#        if peach.body.colliderect(k["rect"]):
+#            return True 
+#    return False  
+#
+#def mario_removes_koopa():
+#    for k in koopas[:]:
+#        if mario.hit_koopa(k):
+#            koopas.remove(k)
 
 def drawText(text, font, surface, x, y):
     textobj = font.render(text, 1, text_color)  ## defining the text object with font and color 
@@ -32,22 +32,21 @@ def drawText(text, font, surface, x, y):
     textrect.topleft = (x,y) ## setting the location of the text object 
     surface.blit(textobj, textrect) ## displaying the textobject at the text location 
     
-def generateKoopa():
-    koopaSize = random.randint(koopa_minsize, koopa_maxsize)
-    north_south = [(0.200), (window_height-koopaSize)]
-    # Rect -> left, top, width, height attributes
-    new_koopa = {"rect" : pygame.Rect(random.randint(0, window_width - koopaSize), random.randint(0,200), koopaSize, koopaSize), #random.choice(north_south)
-                 "speed" : random.randint(koopa_minspeed, koopa_maxspeed), 
-                 "surface" : pygame.transform.scale(koopaImage, (koopaSize, koopaSize))}
-    koopas.append(new_koopa)
-    return koopas
+#def generateKoopa():
+#    koopaSize = random.randint(koopa_minsize, koopa_maxsize)
+#    # Rect -> left, top, width, height attributes
+#    new_koopa = {"rect" : pygame.Rect(random.randint(0, window_width - koopaSize), random.randint(0,200), koopaSize, koopaSize), 
+#                 "speed" : random.randint(koopa_minspeed, koopa_maxspeed), 
+#                 "surface" : pygame.transform.scale(koopaImage, (koopaSize, koopaSize))}
+#    koopas.append(new_koopa)
+#    return koopas
 
-def moveKoopa(koopa, peach):
-    dx, dy = koopa["rect"].x - peach.x, koopa["rect"].y - peach.y
-    dist = math.hypot(dx, dy) # euclidean distance
-    dx, dy = dx/dist, dy/dist ## normalize distance magnitude so koopas won't move super fast 
-    koopa["rect"].x -= dx * random.randint(koopa_minspeed, koopa_maxspeed)
-    koopa["rect"].y -= dy * random.randint(koopa_minspeed, koopa_maxspeed)
+#def moveKoopa(koopa, peach):
+#    dx, dy = koopa["rect"].x - peach.x, koopa["rect"].y - peach.y
+#    dist = math.hypot(dx, dy) # euclidean distance
+#    dx, dy = dx/dist, dy/dist ## normalize distance magnitude so koopas won't move super fast 
+#    koopa["rect"].x -= dx * random.randint(koopa_minspeed, koopa_maxspeed)
+#    koopa["rect"].y -= dy * random.randint(koopa_minspeed, koopa_maxspeed)
     
 ## set up pygame, mouse, surface
 pygame.init()
@@ -71,16 +70,17 @@ pygame.display.update()
 # set up images and characters 
 mario = Mario(left=100, top =100, width = 40, height =40) 
 peach = Peach(left=200, top=500, width=40, height=40)
+koopa_army = KoopaArmy() 
 
 ## koopa characteristics 
-koopas = []
-koopaImage = pygame.image.load("images/koopa.bmp")
-koopa_minsize = 30
-koopa_maxsize = 40
-koopa_minspeed = 1 
-koopa_maxspeed = 5 
-koopa_bad_rate = 5
-koopa_add = 0
+#koopas = []
+#koopaImage = pygame.image.load("images/koopa.bmp")
+#koopa_minsize = 30
+#koopa_maxsize = 40
+#koopa_minspeed = 1 
+#koopa_maxspeed = 5 
+#koopa_bad_rate = 10000
+koopa_add_counter = 0
 
 ## directional buttons and score 
 topscore = 0
@@ -93,77 +93,47 @@ while True:
     for event in pygame.event.get():
         if event.type == QUIT:
             terminate()
-        if event.type == KEYDOWN:
-            if event.key == K_LEFT:
-                mario.move_left = True 
-                mario.move_right = False 
-            if event.key == K_RIGHT:
-                mario.move_right = True
-                mario.move_left = False 
-            if event.key == K_UP:
-                mario.move_up = True 
-                mario.move_down = False 
-            if event.key == K_DOWN:
-                mario.move_down = True
-                mario.move_up = False
-        if event.type == KEYUP:
-            if event.key == K_LEFT:
-                mario.move_left = False
-            if event.key == K_RIGHT:
-                mario.move_right == False
-            if event.key == K_UP:
-                mario.move_up == False 
-            if event.key == K_DOWN:
-                mario.move_down == False 
-        if event.type == MOUSEMOTION:
-            mario.centerx = event.pos[0]
-            mario.centery = event.pos[1]
+    keys = pygame.key.get_pressed()  # better than using polling to get KEYDOWN events
+    mario.move_left = keys[K_LEFT] and not keys[K_RIGHT]
+    mario.move_right = keys[K_RIGHT] and not keys[K_LEFT]
+    mario.move_up = keys[K_UP] and not keys[K_DOWN]
+    mario.move_down = keys[K_DOWN] and not keys[K_UP] 
      
      ## go through game loop and add koopas 
-    koopa_add += 1 
-    if koopa_add == koopa_bad_rate:
-        koopa_add = 0
-        koopas = generateKoopa()
+    koopa_add_counter += 1 
+    if koopa_add_counter == koopa_army.bad_rate:
+        koopa_add_counter = 0
+        koopa_army.generate_koopa(window_surface)  
     
-    # move mario 
-#    if moveLeft and mario.body.left >0:
-#        mario.body.left -= mario.move_rate
-#    if moveRight and mario.body.right < window_width:
-#        mario.body.left += mario.move_rate
-#    if moveUp and mario.body.top > 0 :
-#        mario.body.top -= mario.move_rate 
-#    if moveDown and mario.body.top < window_height:
-#        mario.body.top += mario.move_rate 
-    mario.move(window_width, window_height)         
-
-    # move peach 
+    # move characters  
+    mario.move(window_surface) 
     peach.move(window_surface)
+    koopa_army.move(peach) 
         
     # move koopa 
-    for k in koopas:
-        moveKoopa(k, peach.body)
+#    for k in koopas:
+#        moveKoopa(k, peach.body)
        
     # draw game world 
     window_surface.fill(background)
     drawText("Score : %s" % (score), font, window_surface, 450, 510)
     drawText("Top Score : %s" % (topscore), font, window_surface, 450,540)
     
-    # draw mario's updated position 
+    # draw updated_positions 
     mario.draw_character(window_surface)
-    
-    # draw peach's updated position 
     peach.draw_character(window_surface) 
+    koopa_army.draw_army(window_surface) 
     
     # draw koopas 
-    for k in koopas:
-        window_surface.blit(k["surface"], k["rect"])
+#    for k in koopas:
+#        window_surface.blit(k["surface"], k["rect"])
     
-    mario_removes_koopa() 
-        
+    mario.attack_koopa_army(koopa_army) 
+    
     pygame.display.update()
     
     # check if koopa hit peach 
-    if did_koopa_reach_peach():
+    if peach.got_captured_by(koopa_army): 
         if score > topscore:
             topscore = score 
         drawText("Game Over!", font, window_surface, window_width/3, window_height/3)
