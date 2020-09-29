@@ -41,7 +41,7 @@ class Mario(Nintendo):
         self.move_down = False 
         self.image = pygame.image.load("images/mario.bmp")
 
-    def move(self, window_surface): 
+    def move_and_attack(self, window_surface, koopa_army): 
         if not self.pause: 
             if self.move_left:
                 self.body.move_ip(-1 * self.move_rate, 0)
@@ -52,9 +52,10 @@ class Mario(Nintendo):
             if self.move_down:
                 self.body.move_ip(0, self.move_rate) 
         self.body.clamp_ip(window_surface.get_rect()) 
+        self._attack_koopa_army(koopa_army) 
 
-    def attack_koopa_army(self, koopa_army):
-        for k in koopa_army.koopas[:]:
+    def _attack_koopa_army(self, koopa_army):
+        for k in koopa_army.koopas[:]:   # Use [:] to create a copy so we can update + remove from actual array while iterating  
             if self.hit_koopa(k):
                 koopa_army.koopas.remove(k) 
 
@@ -72,10 +73,7 @@ class Peach(Nintendo):
 
     def got_captured_by(self, koopa_army):
         for k in koopa_army.koopas[:]:
-            if self.hit_koopa(k):
-                return True 
-        return False 
-#        return True if (self.hit_koopa(k) for k in koopa_army.koopas[:]) else False 
+            return True if self.hit_koopa(k) else False 
             
 
 class Koopa:
@@ -101,13 +99,17 @@ class Koopa:
 
     def move_towards(self, peach):
         dx, dy = self.body.x - peach.body.x, self.body.y - peach.body.y
-        dist = math.hypot(dx, dy)       # euclidean distance
-        dx, dy = dx/dist, dy/dist       ## normalize distance magnitude so koopas won't move super fast 
+        try: 
+            dist = math.hypot(dx, dy)      # euclidean distance  
+            dx, dy = dx/dist, dy/dist      # normalize distance magnitude so koopas won't move super fast 
+        except ZeroDivisionError:
+            pass 
         self.body.x -= dx * random.randint(self.min_speed, self.max_speed) 
         self.body.y -= dy * random.randint(self.min_speed, self.max_speed)
 
 
 class KoopaArmy: 
+
     bad_rate = 35 
 
     def __init__(self): 

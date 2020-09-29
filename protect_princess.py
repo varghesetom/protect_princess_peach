@@ -5,94 +5,63 @@ Protect Princess Peach from the Koopas as she picks up flowers!
 '''
 
 import pygame, random, sys, math, copy, time
-from Characters import Nintendo, Mario, Peach, KoopaArmy 
-
 from pygame.locals import *
+import util
+from Characters import Nintendo, Mario, Peach, KoopaArmy 
+from settings import * 
 
-def terminate():
-    pygame.quit()
-    sys.exit()
-    
-#Use the [:] to create a copy so as not to mess up the other processes of adding koopas 
-
-#def did_koopa_reach_peach():
-#    for k in koopas:
-#        if peach.body.colliderect(k["rect"]):
-#            return True 
-#    return False  
-#
-#def mario_removes_koopa():
-#    for k in koopas[:]:
-#        if mario.hit_koopa(k):
-#            koopas.remove(k)
-
-def drawText(text, font, surface, x, y):
-    textobj = font.render(text, 1, text_color)  ## defining the text object with font and color 
-    textrect = textobj.get_rect() # getting size and location of this text object 
-    textrect.topleft = (x,y) ## setting the location of the text object 
-    surface.blit(textobj, textrect) ## displaying the textobject at the text location 
-    
-#def generateKoopa():
-#    koopaSize = random.randint(koopa_minsize, koopa_maxsize)
-#    # Rect -> left, top, width, height attributes
-#    new_koopa = {"rect" : pygame.Rect(random.randint(0, window_width - koopaSize), random.randint(0,200), koopaSize, koopaSize), 
-#                 "speed" : random.randint(koopa_minspeed, koopa_maxspeed), 
-#                 "surface" : pygame.transform.scale(koopaImage, (koopaSize, koopaSize))}
-#    koopas.append(new_koopa)
-#    return koopas
-
-#def moveKoopa(koopa, peach):
-#    dx, dy = koopa["rect"].x - peach.x, koopa["rect"].y - peach.y
-#    dist = math.hypot(dx, dy) # euclidean distance
-#    dx, dy = dx/dist, dy/dist ## normalize distance magnitude so koopas won't move super fast 
-#    koopa["rect"].x -= dx * random.randint(koopa_minspeed, koopa_maxspeed)
-#    koopa["rect"].y -= dy * random.randint(koopa_minspeed, koopa_maxspeed)
-    
 ## set up pygame, mouse, surface
 pygame.init()
-window_width = 600
-window_height = 600 
 window_surface = pygame.display.set_mode((window_width, window_height), 0, 32)
 pygame.display.set_caption("Protect Princess Peach")
-mainClock = pygame.time.Clock() ## time used to speed up the game with FPS 
-pygame.mouse.set_visible = False 
-window_width = 900
-window_height = 900 
-text_color = (0,0,0)
-background = (0,255,255) 
-fps = 40 
 font = pygame.font.SysFont(None,30) # default font set at 30 points 
+clock = pygame.time.Clock() ## time used to speed up the game with FPS 
+pygame.mouse.set_visible = False 
+
 # show start screen
 window_surface.fill(background)
-drawText("Protect Princess Peach!" , font, window_surface, window_width/2, window_height/2)
+util.draw_text("Protect Princess Peach!" , font, window_surface, window_width/2, window_height/2)
 pygame.display.update()
 
 # set up images and characters 
 mario = Mario(left=100, top =100, width = 40, height =40) 
 peach = Peach(left=200, top=500, width=40, height=40)
 koopa_army = KoopaArmy() 
-
-## koopa characteristics 
-#koopas = []
-#koopaImage = pygame.image.load("images/koopa.bmp")
-#koopa_minsize = 30
-#koopa_maxsize = 40
-#koopa_minspeed = 1 
-#koopa_maxspeed = 5 
-#koopa_bad_rate = 10000
 koopa_add_counter = 0
 
 ## directional buttons and score 
 topscore = 0
 score = 0 
+game_over = False 
+
+def show_game_over():
+    window_surface.fill((255, 255, 255)) 
+    util.draw_text("GAME OVER!", font, window_surface, window_width / 1.5, window_height / 1.5)
+    util.draw_text("Press a key to begin", font, window_surface, window_width / 1.5, window_height *(3/4))
+    pygame.display.flip()
+    waiting = True
+    while waiting:
+        clock.tick(fps)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                util.terminate()  
+            if event.type == pygame.KEYUP:
+                waiting = False
 
 # set up game loop 
 while True:
+    if game_over:
+        show_game_over()
+        game_over = False 
+        score = 0 
+        koopa_add_counter = 0 
+        koopa_army.koopas = [] 
+
     score += 1
     ## go through event loop 
     for event in pygame.event.get():
         if event.type == QUIT:
-            terminate()
+            util.terminate()
     keys = pygame.key.get_pressed()  # better than using polling to get KEYDOWN events
     mario.move_left = keys[K_LEFT] and not keys[K_RIGHT]
     mario.move_right = keys[K_RIGHT] and not keys[K_LEFT]
@@ -104,48 +73,33 @@ while True:
     if koopa_add_counter == koopa_army.bad_rate:
         koopa_add_counter = 0
         koopa_army.generate_koopa(window_surface)  
-    
-    # move characters  
-    mario.move(window_surface) 
-    peach.move(window_surface)
-    koopa_army.move(peach) 
-        
-    # move koopa 
-#    for k in koopas:
-#        moveKoopa(k, peach.body)
-       
+
     # draw game world 
     window_surface.fill(background)
-    drawText("Score : %s" % (score), font, window_surface, 450, 510)
-    drawText("Top Score : %s" % (topscore), font, window_surface, 450,540)
+    util.draw_text("Score : %s" % (score), font, window_surface, 450, 510)
+    util.draw_text("Top Score : %s" % (topscore), font, window_surface, 450,540)
+    
+    # move characters  
+    mario.move_and_attack(window_surface, koopa_army) 
+    peach.move(window_surface)
+    koopa_army.move(peach) 
+
     
     # draw updated_positions 
     mario.draw_character(window_surface)
     peach.draw_character(window_surface) 
     koopa_army.draw_army(window_surface) 
-    
-    # draw koopas 
-#    for k in koopas:
-#        window_surface.blit(k["surface"], k["rect"])
-    
-    mario.attack_koopa_army(koopa_army) 
-    
+
     pygame.display.update()
     
     # check if koopa hit peach 
     if peach.got_captured_by(koopa_army): 
+        game_over = True 
         if score > topscore:
             topscore = score 
-        drawText("Game Over!", font, window_surface, window_width/3, window_height/3)
-        time.sleep(5)
-        terminate()
     
     # setting game speed 
-    mainClock.tick(fps)
-    
-
-#terminate()
-    
+    clock.tick(fps)
     
     
         
