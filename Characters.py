@@ -55,7 +55,7 @@ class Mario(Nintendo):
         self._attack_koopa_army(koopa_army) 
 
     def _attack_koopa_army(self, koopa_army):
-        for k in koopa_army.koopas[:]:   # Use [:] to create a copy so we can update + remove from actual array while iterating  
+        for k in koopa_army.koopas[:]:   # Use [:] to create a copy so we can update + remove from actual array while iterating 
             if self.hit_koopa(k):
                 koopa_army.koopas.remove(k) 
 
@@ -64,7 +64,7 @@ class Peach(Nintendo):
 
     def __init__(self,left, top, width, height,speed_min=0, speed_max=0, minsize=0, maxsize=0):
         super().__init__(left, top, width, height)
-        self.image = pygame.image.load("images/peach.bmp") 
+        self.image = pygame.image.load("images/peach.png") 
 
     def move(self, window_surface):
         self.body.left += random.randint(-1, 1)

@@ -7,6 +7,6 @@ import pygame
 window_width = 600
 window_height = 600 
 text_color = (0,0,0)
-background = (0,255,255) 
+background = (0, 128, 0) 
 fps = 40 
 

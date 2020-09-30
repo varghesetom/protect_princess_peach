@@ -12,16 +12,15 @@ from settings import *
 
 ## set up pygame, mouse, surface
 pygame.init()
-window_surface = pygame.display.set_mode((window_width, window_height), 0, 32)
+window_surface = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption("Protect Princess Peach")
 font = pygame.font.SysFont(None,30) # default font set at 30 points 
 clock = pygame.time.Clock() ## time used to speed up the game with FPS 
 pygame.mouse.set_visible = False 
 
 # show start screen
-window_surface.fill(background)
-util.draw_text("Protect Princess Peach!" , font, window_surface, window_width/2, window_height/2)
-pygame.display.update()
+sky = pygame.image.load(r"./images/sky.png") 
+# pygame.display.update()
 
 # set up images and characters 
 mario = Mario(left=100, top =100, width = 40, height =40) 
@@ -33,6 +32,9 @@ koopa_add_counter = 0
 topscore = 0
 score = 0 
 game_over = False 
+
+def show_start_screen():
+    pass
 
 def show_game_over():
     window_surface.fill((255, 255, 255)) 
@@ -76,6 +78,8 @@ while True:
 
     # draw game world 
     window_surface.fill(background)
+    window_surface.blit(sky, (0,0)) 
+
     util.draw_text("Score : %s" % (score), font, window_surface, 450, 510)
     util.draw_text("Top Score : %s" % (topscore), font, window_surface, 450,540)
     
@@ -84,7 +88,6 @@ while True:
     peach.move(window_surface)
     koopa_army.move(peach) 
 
-    
     # draw updated_positions 
     mario.draw_character(window_surface)
     peach.draw_character(window_surface) 
@@ -100,14 +103,6 @@ while True:
     
     # setting game speed 
     clock.tick(fps)
-    
-    
-        
-    
-         
-    
-
-
     
 
 
