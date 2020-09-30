@@ -8,6 +8,7 @@ import pygame, random, sys, math, copy, time
 from pygame.locals import *
 import util
 from Characters import Nintendo, Mario, Peach, KoopaArmy 
+from Flower import Flower 
 from settings import * 
 
 ## set up pygame, mouse, surface
@@ -25,6 +26,7 @@ sky = pygame.image.load(r"./images/sky.png")
 # set up images and characters 
 mario = Mario(left=100, top =100, width = 40, height =40) 
 peach = Peach(left=200, top=500, width=40, height=40)
+flower = Flower(window_surface) 
 koopa_army = KoopaArmy() 
 koopa_add_counter = 0
 
@@ -59,7 +61,6 @@ while True:
         koopa_add_counter = 0 
         koopa_army.koopas = [] 
 
-    score += 1
     ## go through event loop 
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -85,15 +86,21 @@ while True:
     
     # move characters  
     mario.move_and_attack(window_surface, koopa_army) 
-    peach.move(window_surface)
+    peach.move_towards(flower) 
     koopa_army.move(peach) 
 
     # draw updated_positions 
     mario.draw_character(window_surface)
     peach.draw_character(window_surface) 
+    flower.draw_character(window_surface) 
     koopa_army.draw_army(window_surface) 
 
     pygame.display.update()
+
+    ## check if Peach reach flower 
+    if peach.did_reach_flower(flower):
+        score += 1 
+        flower = Flower(window_surface) 
     
     # check if koopa hit peach 
     if peach.got_captured_by(koopa_army): 

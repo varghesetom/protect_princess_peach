@@ -1,7 +1,8 @@
 
 import pygame, random, math 
+from ImageAbstract import Image
 
-class Nintendo:
+class Nintendo(Image):
 
     def __init__(self,left, top, width, height, speed_min=0, speed_max=0, minsize=0, maxsize=0):
         self.left = left
@@ -22,11 +23,11 @@ class Nintendo:
             return True
         return False 
 
-    def _stretch(self):
-        return pygame.transform.scale(self.image, (40,40))
+    def stretch(self):
+        return super().stretch() 
     
     def draw_character(self, screen):
-        screen.blit(self._stretch(), self.body) 
+        super().draw_character(screen) 
 
 
 class Mario(Nintendo):
@@ -62,11 +63,13 @@ class Mario(Nintendo):
 
 class Peach(Nintendo):
 
+    speed = 7
+
     def __init__(self,left, top, width, height,speed_min=0, speed_max=0, minsize=0, maxsize=0):
         super().__init__(left, top, width, height)
         self.image = pygame.image.load("images/peach.png") 
 
-    def move(self, window_surface):
+    def move(self, window_surface, flower):
         self.body.left += random.randint(-1, 1)
         self.body.top += random.randint(-1, 1)
         self.body.clamp_ip(window_surface.get_rect()) 
@@ -74,9 +77,17 @@ class Peach(Nintendo):
     def got_captured_by(self, koopa_army):
         for k in koopa_army.koopas[:]:
             return True if self.hit_koopa(k) else False 
+
+    def move_towards(self, flower):
+        move_towards_object(self, flower) 
+
+    def did_reach_flower(self, flower):
+        if self.body.colliderect(flower.body):
+            return True 
+        return False 
             
 
-class Koopa:
+class Koopa(Image):
 
     min_size=30
     max_size=40 
@@ -92,20 +103,13 @@ class Koopa:
         return pygame.Rect(random.randint(0, window_surface.get_width()), random.randint(0, window_surface.get_height() // 3), self.size, self.size)  
 
     def draw_character(self, screen):
-        screen.blit(self._stretch(), self.body) 
+        super().draw_character(screen) 
 
-    def _stretch(self):
-        return pygame.transform.scale(self.image, (40,40))
+    def stretch(self):
+        return super().stretch() 
 
     def move_towards(self, peach):
-        dx, dy = self.body.x - peach.body.x, self.body.y - peach.body.y
-        try: 
-            dist = math.hypot(dx, dy)      # euclidean distance  
-            dx, dy = dx/dist, dy/dist      # normalize distance magnitude so koopas won't move super fast 
-        except ZeroDivisionError:
-            pass 
-        self.body.x -= dx * random.randint(self.min_speed, self.max_speed) 
-        self.body.y -= dy * random.randint(self.min_speed, self.max_speed)
+        move_towards_object(self, peach) 
 
 
 class KoopaArmy: 
@@ -127,4 +131,21 @@ class KoopaArmy:
             k.draw_character(window_surface) 
 
     
+def move_towards_object(person, endpoint):
+    dx, dy = person.body.x - endpoint.body.x, person.body.y - endpoint.body.y 
+    try:
+        dist = math.hypot(dx, dy)
+        dx, dy = dx/dist, dy/dist 
+    except ZeroDivisionError:
+        pass 
+    else:
+        try: 
+            if isinstance(person, Koopa):
+                person.body.x -= dx * random.randint(person.min_speed, person.max_speed) 
+                person.body.y -= dy * random.randint(person.min_speed, person.max_speed) 
+            elif isinstance(person, Peach):
+                person.body.x -= dx * person.speed 
+                person.body.y -= dy * person.speed 
+        except Exception as e:
+            print(f"Exception occurred while moving {person} to {endpoint}: ", e) 
     
